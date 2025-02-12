@@ -6,12 +6,20 @@ from pydantic import BaseModel
 class Submission(BaseModel):
     sub_id: str | None = None
     type: str  # `python`,`math`, ...
-    options: dict[str, str]
+    options: dict[str, str] | None = None
     solution: str
     expected_answer: str
 
     def model_post_init(self, __context):
         self.sub_id = self.sub_id or str(uuid.uuid4())
+
+
+class WorkPayload(BaseModel):
+    work_id: str | None = None
+    submission: Submission
+
+    def model_post_init(self, __context):
+        self.work_id = self.work_id or str(uuid.uuid4())
 
 
 class SubmissionResult(BaseModel):

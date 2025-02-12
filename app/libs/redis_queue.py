@@ -1,3 +1,4 @@
+from typing import Awaitable
 import redis
 import socket
 
@@ -23,8 +24,9 @@ class RedisQueue:
     def pop(self, queue_name):
         return self.redis.lpop(queue_name)
 
-    def block_pop(self, queue_name, timeout=0):
-        return self.redis.blpop(queue_name, timeout)
+    def block_pop(self, queue_name, timeout=0) -> tuple[str, bytes] | None | Awaitable[tuple[str, bytes]] | Awaitable[None]:
+        result = self.redis.blpop(queue_name, timeout)
+        return result
 
     def expire(self, key, timeout):
         return self.redis.expire(key, timeout)

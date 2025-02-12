@@ -51,7 +51,7 @@ class ProcessExecutor:
             stdout=stdout,
             stderr=stderr,
             exit_code=exit_code,
-            duration=time_end - time_start
+            cost=time_end - time_start
         )
 
 

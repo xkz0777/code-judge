@@ -66,5 +66,5 @@ And set the `REDIS_URI` env variable to `redis://localhost:6379`.
 ## Run the project in debug mode
 
 ```bash
-python debug_api.py
+REDIS_URI=redis://localhost:6379 python debug_api.py
 ```

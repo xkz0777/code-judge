@@ -3,7 +3,7 @@ import logging
 import threading
 from time import sleep
 
-from app.model import Submission, SubmissionResult
+from app.model import Submission, SubmissionResult, WorkPayload
 from app.libs.executors.python_executor import PythonExecutor, ScriptExecutor
 import app.config as app_config
 from app.work_queue import connect_queue
@@ -15,42 +15,48 @@ logger = logging.getLogger(__name__)
 
 def executor_factory(type: str) -> ScriptExecutor:
     if type == 'python':
-        return PythonExecutor(python_path=app_config.PYTHON_EXECUTOR_PATH)
+        return PythonExecutor(
+            python_path=app_config.PYTHON_EXECUTOR_PATH,
+            timeout=app_config.MAX_EXECUTION_TIME,
+            memory_limit=app_config.MAX_MEMORY * 1024 * 1024,
+        )
     else:
         raise ValueError(f'Unsupported type: {type}')
 
 
-def judge(payload: Submission):
+def judge(sub: Submission):
     try:
-        executor = executor_factory(payload.type)
-        result = executor.execute_script(payload.solution)
+        executor = executor_factory(sub.type)
+        result = executor.execute_script(sub.solution)
+        # TODO: make this more robust
+        success = result.success and result.stdout.strip().split('\n')[-1] == sub.expected_answer
         sub_result = SubmissionResult(
-            sub_id=payload.sub_id, success=result.success, cost=result.cost
+            sub_id=sub.sub_id, success=success, cost=result.cost
         )
     except Exception as e:
-        logger.exception(f'Worker failed to judge submission {payload.sub_id}')
+        logger.exception(f'Worker failed to judge submission {sub.sub_id}')
         sub_result = SubmissionResult(
-            sub_id=payload.sub_id, success=False, cost=0
+            sub_id=sub.sub_id, success=False, cost=0
         )
     return sub_result
 
 
 class Worker(Process):
-    def _run(self):
+    def _run_loop(self):
         redis_queue = connect_queue(False)
         while True:
-            sub_json = redis_queue.block_pop(app_config.WORK_QUEUE_NAME)[0]
-            payload = Submission.model_validate_json(sub_json)
-            result = judge(payload)
-            result_queue_name = f'{app_config.REDIS_RESULT_PREFIX}{payload.sub_id}'
-            redis_queue.expire(result_queue_name, app_config.REDIS_RESULT_EXPIRE)
+            _, payload_json = redis_queue.block_pop(app_config.WORK_QUEUE_NAME)
+            payload = WorkPayload.model_validate_json(payload_json)
+            result = judge(payload.submission)
+            result_queue_name = f'{app_config.REDIS_RESULT_PREFIX}{payload.work_id}'
             redis_queue.push(result_queue_name, result.model_dump_json())
+            redis_queue.expire(result_queue_name, app_config.REDIS_RESULT_EXPIRE)
 
     def run(self):
         while True:
             try:
-                self._run()
-            except Exception as e:
+                self._run_loop()
+            except Exception:
                 logger.exception(f'Worker failed. Will retry in 60 seconds...')
                 sleep(60)
 

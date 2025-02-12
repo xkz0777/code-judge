@@ -33,8 +33,12 @@ def _exec_limit_memory(maxsize):
     soft, hard = resource.getrlimit(resource.RLIMIT_AS)
     resource.setrlimit(resource.RLIMIT_AS, (maxsize, hard))
 
-_exec_set_max_runtime({{timeout}})
-_exec_limit_memory({{memory_limit}})
+
+if {{timeout}}:
+    _exec_set_max_runtime({{timeout}})
+
+if {{memory_limit}}:
+    _exec_limit_memory({{memory_limit}})
 
 """.strip()
 
@@ -48,13 +52,15 @@ print(f"{DURATION_MARK}{{_exec_duration}}", flush=True)
 """.strip()
 
 class PythonExecutor(ScriptExecutor):
-    def __init__(self, python_path: str):
+    def __init__(self, python_path: str, timeout: float = None, memory_limit: int = None):
+        self.timeout = timeout
+        self.memory_limit = memory_limit
         self.python_path = python_path
 
     @contextmanager
     def setup_command(self, script: str):
         with tempfile.NamedTemporaryFile(mode='w', suffix='.py') as f:
-            f.write(PRE_TEMPLATE)
+            f.write(PRE_TEMPLATE.format(timeout=self.timeout, memory_limit=self.memory_limit))
             f.write("\n")
             f.write(script)
             f.write("\n")
