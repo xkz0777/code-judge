@@ -16,6 +16,16 @@ services:
       timeout: 10s
       retries: 3
       start_period: 3s
+  workers:
+    build: .
+    restart: always
+    environment:
+      REDIS_URI: redis://redis
+      MAX_WORKERS: 10
+    command: ["python", "run_workers.py"]
+    depends_on:
+      redis:
+        condition: service_healthy
   redis:
     image: "redis:alpine"
     restart: always

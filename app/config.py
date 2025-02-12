@@ -4,7 +4,7 @@ import os
 env = os.environ.get
 
 
-REDIS_URI = env('REDIS_URI')
+REDIS_URI = env('REDIS_URI', 'redis://localhost:6379/0')
 if not REDIS_URI:
     raise ValueError('REDIS_URI is not set')
 
@@ -17,3 +17,5 @@ MAX_EXECUTION_TIME = float(env('MAX_EXECUTION_TIME', 10))  # default 10 seconds
 MAX_WORKERS = int(env('MAX_WORKERS', os.cpu_count()))  # default 0, which means os.cpu_count()
 
 WORK_QUEUE_NAME = env('WORK_QUEUE_NAME', 'work-queue')
+
+RUN_WORKERS = int(env('RUN_WORKER', 0))  # default 0, which means run workers in a separate process
