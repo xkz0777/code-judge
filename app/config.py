@@ -13,7 +13,7 @@ REDIS_RESULT_EXPIRE = int(env('REDIS_RESULT_EXPIRE', 3600))  # default 1 hour
 
 MAX_EXECUTION_TIME = int(env('MAX_EXECUTION_TIME', 10))  # default 10 seconds
 MAX_MEMORY = int(env('MAX_MEMORY', 256))  # default 256 MB
-MAX_WORKERS = int(env('MAX_WORKERS', os.cpu_count()))  # default 0, which means os.cpu_count()
+MAX_WORKERS = int(env('MAX_WORKERS', os.cpu_count())) or os.cpu_count()  # default os.cpu_count()
 
 WORK_QUEUE_NAME = env('WORK_QUEUE_NAME', 'work-queue')
 
