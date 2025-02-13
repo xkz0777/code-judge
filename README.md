@@ -68,3 +68,35 @@ And set the `REDIS_URI` env variable to `redis://localhost:6379`.
 ```bash
 REDIS_URI=redis://localhost:6379 python debug_api.py
 ```
+
+# Usage
+
+## use httpie
+You need to firstly install httpie via
+```
+sudo apt install httpie
+```
+and then you can use the following command to test the api.
+```bash
+ http post http://0.0.0.0:8000/judge type=python solution="print(9)" expected_answer=9
+ ```
+
+ ## use curl
+  You can also use curl to test the api.
+  ```bash
+  curl -X POST -H "Content-Type: application/json" -d '{"type":"python", "solution":"print(9)", "expected_answer":"9"}' http://0.0.0.0:8000/judge
+  ```
+
+  ## Use requests
+  You can also use python requests to test the api.
+  ```python
+  import requests
+  response = requests.post(
+    "http://0.0.0.0:8000/judge",
+    json={
+      "type":"python",
+      "solution":"print(9)",
+      "expected_answer":"9"
+    })
+  print(response.json())
+  ```

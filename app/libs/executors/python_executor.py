@@ -15,8 +15,6 @@ import resource
 import os
 import time
 
-_exec_time_start = time.perf_counter()
-
 # checking time limit exceed
 def _exec_time_exceeded(signo, frame):
     raise SystemExit({TIMEOUT_EXIT_CODE})
@@ -40,6 +38,8 @@ if {{timeout}}:
 if {{memory_limit}}:
     _exec_limit_memory({{memory_limit}})
 
+_exec_time_start = time.perf_counter()
+
 """.strip()
 
 POST_TEMPLATE = f"""
@@ -52,7 +52,7 @@ print(f"{DURATION_MARK}{{_exec_duration}}", flush=True)
 """.strip()
 
 class PythonExecutor(ScriptExecutor):
-    def __init__(self, python_path: str, timeout: float = None, memory_limit: int = None):
+    def __init__(self, python_path: str, timeout: int = None, memory_limit: int = None):
         self.timeout = timeout
         self.memory_limit = memory_limit
         self.python_path = python_path
