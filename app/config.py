@@ -22,3 +22,4 @@ RUN_WORKERS = int(env('RUN_WORKERS', 0))  # default 0, which means run workers i
 
 
 PYTHON_EXECUTOR_PATH = env('PYTHON_EXECUTOR_PATH', 'python3')
+CPP_COMPILER_PATH = env('CPP_COMPILER_PATH', 'g++')

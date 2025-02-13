@@ -27,8 +27,12 @@ class ProcessExecuteResult:
         self.success = self.exit_code == 0
 
 
+class CompileError(Exception):
+    pass
+
 
 TIMEOUT_EXIT_CODE = -101
+COMPILE_ERROR_EXIT_CODE = -102
 
 
 class ProcessExecutor:

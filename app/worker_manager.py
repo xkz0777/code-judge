@@ -5,6 +5,7 @@ from time import sleep
 
 from app.model import Submission, SubmissionResult, WorkPayload
 from app.libs.executors.python_executor import PythonExecutor, ScriptExecutor
+from app.libs.executors.cpp_executor import CppExecutor
 import app.config as app_config
 from app.work_queue import connect_queue
 
@@ -19,6 +20,10 @@ def executor_factory(type: str) -> ScriptExecutor:
             python_path=app_config.PYTHON_EXECUTOR_PATH,
             timeout=app_config.MAX_EXECUTION_TIME,
             memory_limit=app_config.MAX_MEMORY * 1024 * 1024,
+        )
+    elif type == 'cpp':
+        return CppExecutor(
+            compiler_path=app_config.CPP_COMPILER_PATH,
         )
     else:
         raise ValueError(f'Unsupported type: {type}')
