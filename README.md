@@ -53,6 +53,32 @@ sudo docker compose up
 sudo docker compose down
 ```
 
+# Run the project without docker
+
+## Install redis server
+
+```bash
+sudo apt-get update
+sudo apt-get install redis
+```
+and run the following command to start the redis server (if systemctl doesn't work).
+```bash
+redis-server --daemonize yes
+```
+
+## Start api service and worker
+
+### Start them seperately
+```bash
+REDIS_URI=redis://localhost:6379 RUN_WORKERS=0 fastapi run --workers 4 app/main.py
+REDIS_URI=redis://localhost:6379 python run_worker.py
+```
+
+## Start them together (not recommended)
+```bash
+REDIS_URI=redis://localhost:6379 python debug_api.py
+```
+
 # Debug
 
 ## Run Redis

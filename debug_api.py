@@ -1,6 +1,7 @@
 import os
 os.environ['RUN_WORKERS'] = '1'
-os.environ['REDIS_URI'] = 'redis://localhost:6379'
+if os.environ.get('REDIS_URI') is None:
+    os.environ['REDIS_URI'] = 'redis://localhost:6379'
 
 import logging
 logging.basicConfig(

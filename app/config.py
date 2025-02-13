@@ -4,6 +4,7 @@ import os
 env = os.environ.get
 
 
+# TODO: support fakeredis for testing.
 REDIS_URI = env('REDIS_URI', '')
 if not REDIS_URI:
     raise ValueError('REDIS_URI is not set')
