@@ -8,7 +8,8 @@ class Submission(BaseModel):
     type: str  # `python`,`math`, ...
     options: dict[str, str] | None = None
     solution: str
-    expected_answer: str
+    input: str | None = None
+    expected_output: str
 
     def model_post_init(self, __context):
         self.sub_id = self.sub_id or str(uuid.uuid4())

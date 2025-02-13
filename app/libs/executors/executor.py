@@ -11,7 +11,7 @@ class ExecuteResult(Protocol):
 
 
 class Executor:
-    def execute(self, config: dict[str, Any], timeout: float | None = None) -> ExecuteResult:
+    def execute(self, config: dict[str, Any], stdin: str | None = None, timeout: float | None = None) -> ExecuteResult:
         ...
 
 
@@ -32,11 +32,12 @@ TIMEOUT_EXIT_CODE = -101
 
 
 class ProcessExecutor:
-    def execute(self, config: dict[str, Any], timeout: float | None = None) -> ProcessExecuteResult:
+    def execute(self, config: dict[str, Any], stdin: str | None = None, timeout: float | None = None) -> ProcessExecuteResult:
         time_start = time.perf_counter()
         try:
             args = config['args']
-            result = subprocess.run(args, shell=False, check=False, capture_output=True, timeout=timeout)
+            std_input = stdin.encode() if stdin else None
+            result = subprocess.run(args, shell=False, check=False, capture_output=True, timeout=timeout, input=std_input)
             stdout = result.stdout.decode()
             stderr = result.stderr.decode()
             exit_code = result.returncode
@@ -66,6 +67,6 @@ class ScriptExecutor(ProcessExecutor):
     def process_result(self, result: ProcessExecuteResult) -> ProcessExecuteResult:
         return result
 
-    def execute_script(self, script: str, timeout: float | None = None) -> ProcessExecuteResult:
+    def execute_script(self, script: str, stdin: str | None = None, timeout: float | None = None) -> ProcessExecuteResult:
         with self.setup_command(script) as command:
-            return self.process_result(self.execute({'args': command}, timeout=timeout))
+            return self.process_result(self.execute({'args': command}, stdin=stdin, timeout=timeout))

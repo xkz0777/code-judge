@@ -27,9 +27,9 @@ def executor_factory(type: str) -> ScriptExecutor:
 def judge(sub: Submission):
     try:
         executor = executor_factory(sub.type)
-        result = executor.execute_script(sub.solution)
+        result = executor.execute_script(sub.solution, sub.input)
         # TODO: make this more robust
-        success = result.success and result.stdout.strip().split('\n')[-1] == sub.expected_answer
+        success = result.success and result.stdout.strip().split('\n')[-1] == sub.expected_output
         sub_result = SubmissionResult(
             sub_id=sub.sub_id, success=success, cost=result.cost
         )

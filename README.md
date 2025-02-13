@@ -97,6 +97,19 @@ REDIS_URI=redis://localhost:6379 python debug_api.py
 
 # Usage
 
+The input and output of the script use the standard input and output of the script.
+
+You can specify the input and expected output of the script in the request body like
+
+```
+{
+  "type": "python",
+  "solution": "print(input())",
+  "input": "9",
+  "expected_output": "9"
+}
+```
+
 ## use httpie
 You need to firstly install httpie via
 ```
@@ -104,13 +117,12 @@ sudo apt install httpie
 ```
 and then you can use the following command to test the api.
 ```bash
- http post http://0.0.0.0:8000/judge type=python solution="print(9)" expected_answer=9
+ http post http://0.0.0.0:8000/judge type=python solution="print(9)" expected_output=9
  ```
-
  ## use curl
   You can also use curl to test the api.
   ```bash
-  curl -X POST -H "Content-Type: application/json" -d '{"type":"python", "solution":"print(9)", "expected_answer":"9"}' http://0.0.0.0:8000/judge
+  curl -X POST -H "Content-Type: application/json" -d '{"type":"python", "solution":"print(9)", "expected_output":"9"}' http://0.0.0.0:8000/judge
   ```
 
   ## Use requests
@@ -122,7 +134,7 @@ and then you can use the following command to test the api.
     json={
       "type":"python",
       "solution":"print(9)",
-      "expected_answer":"9"
+      "expected_output":"9"
     })
   print(response.json())
   ```
