@@ -3,6 +3,8 @@ os.environ['RUN_WORKERS'] = '1'
 os.environ['MAX_WORKERS'] = '1'
 if os.environ.get('REDIS_URI') is None:
     os.environ['REDIS_URI'] = 'redis://localhost:6379/10'
+if os.environ.get('ERROR_CASE_SAVE_PATH') is None:
+    os.environ['ERROR_CASE_SAVE_PATH'] = './error_cases'
 
 import logging
 logging.basicConfig(

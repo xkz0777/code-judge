@@ -3,6 +3,7 @@ import os
 
 env = os.environ.get
 
+ERROR_CASE_SAVE_PATH = env('ERROR_CASE_SAVE_PATH', '')  # default empty, which means not save error case
 
 # TODO: support fakeredis for testing.
 REDIS_URI = env('REDIS_URI', '')

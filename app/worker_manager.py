@@ -2,7 +2,12 @@ from multiprocessing import Process
 import logging
 import threading
 from time import sleep
+from pathlib import Path
+import json
+from dataclasses import asdict
+import traceback
 
+from app.libs.executors.executor import ProcessExecuteResult
 from app.model import Submission, SubmissionResult, WorkPayload
 from app.libs.executors.python_executor import PythonExecutor, ScriptExecutor
 from app.libs.executors.cpp_executor import CppExecutor
@@ -12,6 +17,27 @@ from app.work_queue import connect_queue
 
 logger = logging.getLogger(__name__)
 
+
+def save_error_case(sub: Submission, result: ProcessExecuteResult | None = None, exception: Exception | None = None):
+    if not app_config.ERROR_CASE_SAVE_PATH:
+        return
+
+    try:
+        save_path = Path(app_config.ERROR_CASE_SAVE_PATH) / sub.sub_id
+        save_path.mkdir(parents=True, exist_ok=True)
+        with open(save_path / 'submission.json', 'w') as f:
+            f.write(sub.model_dump_json(indent=True))
+        with open(save_path / 'solution.txt', 'w') as f:
+            f.write(sub.solution)
+        if result:
+            with open(save_path / 'result.json', 'w') as f:
+                json.dump(asdict(result), f, indent=True)
+        if exception:
+            with open(save_path / 'exception.txt', 'w') as f:
+                for line in traceback.format_exception(exception):
+                    f.write(line)
+    except Exception:
+        logger.exception(f'Failed to save error case for submission {sub.sub_id}')
 
 
 def executor_factory(type: str) -> ScriptExecutor:
@@ -37,11 +63,14 @@ def judge(sub: Submission):
         result = executor.execute_script(sub.solution, sub.input)
         # TODO: make this more robust
         success = result.success and result.stdout.strip() == sub.expected_output.strip()
+        if not success:
+            save_error_case(sub, result)
         sub_result = SubmissionResult(
             sub_id=sub.sub_id, success=success, cost=result.cost
         )
     except Exception as e:
         logger.exception(f'Worker failed to judge submission {sub.sub_id}')
+        save_error_case(sub, None, e)
         sub_result = SubmissionResult(
             sub_id=sub.sub_id, success=False, cost=0
         )

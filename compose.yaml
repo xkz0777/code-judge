@@ -22,6 +22,7 @@ services:
     environment:
       REDIS_URI: redis://redis
       MAX_WORKERS: 10
+      ERROR_CASE_SAVE_PATH:
     command: ["python", "run_workers.py"]
     depends_on:
       redis:
