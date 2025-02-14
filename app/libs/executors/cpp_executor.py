@@ -4,19 +4,54 @@ from typing import Any, Generator
 from app.libs.executors.executor import COMPILE_ERROR_EXIT_CODE, ProcessExecuteResult, ScriptExecutor, CompileError
 
 
+RESOURCE_LIMIT_TEMPLATE = """
+#include <sys/resource.h>
+
+class ResourceLimit {{
+public:
+    ResourceLimit(int timeout, int memory_limit) {{
+        struct rlimit rlim;
+        if (timeout > 0) {{
+            getrlimit(RLIMIT_CPU, &rlim);
+            rlim.rlim_cur = timeout;
+            setrlimit(RLIMIT_CPU, &rlim);
+        }}
+        if (memory_limit > 0) {{
+            getrlimit(RLIMIT_AS, &rlim);
+            rlim.rlim_cur = memory_limit;
+            setrlimit(RLIMIT_AS, &rlim);
+        }}
+    }}
+}};
+
+ResourceLimit resource_limit = ResourceLimit({timeout}, {memory_limit});
+""".strip()
+
+
 class CppExecutor(ScriptExecutor):
-    def __init__(self, compiler_path: str):
+    def __init__(self, compiler_path: str, timeout: int = None, memory_limit: int = None):
         self.compiler_path = compiler_path
-        # TODO: add timeout/memory limit support
+        self.timeout = timeout
+        self.memory_limit = memory_limit
 
     @contextmanager
     def setup_command(self, script: str) -> Generator[list[str], Any, None]:
         with tempfile.TemporaryDirectory() as tmp_path:
             source_path = f"{tmp_path}/source.cpp"
+            resource_limit_path = f"{tmp_path}/resource_limit.h"
             exec_path = f"{tmp_path}/run"
+            with open(resource_limit_path, "w") as f:
+                f.write(RESOURCE_LIMIT_TEMPLATE.format(
+                    timeout=self.timeout or 0,
+                    memory_limit=self.memory_limit or 0)
+                )
             with open(source_path, "w") as f:
+                f.write('#include "resource_limit.h"\n')
                 f.write(script)
-            result = self.execute({'args': [self.compiler_path,  "-O2", source_path,  "-o", exec_path]})
+            result = self.execute(
+                {'args': [self.compiler_path,  "-O2", source_path,  "-o", exec_path]},
+                timeout=self.timeout or None
+            )
             if not result.success:
                 raise CompileError(result.stderr)
             yield [exec_path]

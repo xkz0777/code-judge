@@ -24,6 +24,8 @@ def executor_factory(type: str) -> ScriptExecutor:
     elif type == 'cpp':
         return CppExecutor(
             compiler_path=app_config.CPP_COMPILER_PATH,
+            timeout=app_config.MAX_EXECUTION_TIME,
+            memory_limit=app_config.MAX_MEMORY * 1024 * 1024,
         )
     else:
         raise ValueError(f'Unsupported type: {type}')
@@ -34,7 +36,7 @@ def judge(sub: Submission):
         executor = executor_factory(sub.type)
         result = executor.execute_script(sub.solution, sub.input)
         # TODO: make this more robust
-        success = result.success and result.stdout.strip().split('\n')[-1] == sub.expected_output
+        success = result.success and result.stdout.strip() == sub.expected_output.strip()
         sub_result = SubmissionResult(
             sub_id=sub.sub_id, success=success, cost=result.cost
         )
