@@ -10,9 +10,15 @@ class RedisQueue:
         self.redis: redis.Redis | redis.asyncio.Redis = self._init_redis()
 
     def _init_redis(self) -> redis.Redis | redis.asyncio.Redis:
-        Redis = redis.Redis if not self.is_async else redis.asyncio.Redis
+        if '+cluster://' in self.redis_uri:
+            Redis = redis.RedisCluster if not self.is_async else redis.asyncio.RedisCluster
+            redis_uri = self.redis_uri.replace('+cluster://', '://')
+        else:
+            Redis = redis.Redis if not self.is_async else redis.asyncio.Redis
+            redis_uri = self.redis_uri
+
         return Redis.from_url(
-            self.redis_uri,
+            redis_uri,
             socket_connect_timeout=120,
             socket_keepalive=True,
             socket_keepalive_options={socket.TCP_KEEPIDLE: 2, socket.TCP_KEEPINTVL: 1, socket.TCP_KEEPCNT: 2}
