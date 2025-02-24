@@ -12,7 +12,7 @@ RESOURCE_LIMIT_TEMPLATE = """
 
 static void handler(int sig) {{
     printf("Time limit exceeded\\n");
-    _exit(-101);
+    kill(getpid(), SIGKILL);
 }}
 
 class ResourceLimit {{
