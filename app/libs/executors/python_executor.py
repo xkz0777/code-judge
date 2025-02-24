@@ -15,9 +15,14 @@ import resource
 import os
 import time
 
+def _exec_set_alarm_timeout(timeout):
+    signal.signal(signal.SIGALRM, _exec_time_exceeded)
+    signal.alarm(timeout)
+
+
 # checking time limit exceed
-def _exec_time_exceeded(signo, frame):
-    raise SystemExit({TIMEOUT_EXIT_CODE})
+def _exec_time_exceeded(*_):
+    os._exit(-101)
 
 
 def _exec_set_max_runtime(seconds):
@@ -31,8 +36,10 @@ def _exec_limit_memory(maxsize):
     soft, hard = resource.getrlimit(resource.RLIMIT_AS)
     resource.setrlimit(resource.RLIMIT_AS, (maxsize, hard))
 
+
 resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
 if {{timeout}}:
+    _exec_set_alarm_timeout({{timeout}})
     _exec_set_max_runtime({{timeout}})
 
 if {{memory_limit}}:

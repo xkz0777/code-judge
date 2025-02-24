@@ -6,6 +6,14 @@ from app.libs.executors.executor import COMPILE_ERROR_EXIT_CODE, ProcessExecuteR
 
 RESOURCE_LIMIT_TEMPLATE = """
 #include <sys/resource.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <signal.h>
+
+static void handler(int sig) {{
+    printf("Time limit exceeded\\n");
+    _exit(-101);
+}}
 
 class ResourceLimit {{
 public:
@@ -24,6 +32,9 @@ public:
         getrlimit(RLIMIT_CORE, &rlim);
         rlim.rlim_cur = 0;
         setrlimit(RLIMIT_CORE, &rlim);
+
+        alarm(timeout);
+        signal(SIGALRM, handler);
     }}
 }};
 
