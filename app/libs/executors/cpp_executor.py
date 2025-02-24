@@ -21,6 +21,9 @@ public:
             rlim.rlim_cur = memory_limit;
             setrlimit(RLIMIT_AS, &rlim);
         }}
+        getrlimit(RLIMIT_CORE, &rlim);
+        rlim.rlim_cur = 0;
+        setrlimit(RLIMIT_CORE, &rlim);
     }}
 }};
 

@@ -31,7 +31,7 @@ def _exec_limit_memory(maxsize):
     soft, hard = resource.getrlimit(resource.RLIMIT_AS)
     resource.setrlimit(resource.RLIMIT_AS, (maxsize, hard))
 
-
+resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
 if {{timeout}}:
     _exec_set_max_runtime({{timeout}})
 
