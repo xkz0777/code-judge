@@ -1,11 +1,13 @@
 from multiprocessing import Process
 import logging
 import threading
-from time import sleep
+from time import sleep, time
 from pathlib import Path
 import json
 from dataclasses import asdict
 import traceback
+
+import psutil
 
 from app.libs.executors.executor import ProcessExecuteResult
 from app.model import Submission, SubmissionResult, WorkPayload
@@ -111,10 +113,11 @@ class WorkerManager:
     def run(self):
         while True:
             try:
+                logger.info('Checking workers...')
                 self._check_workers()
             except Exception as e:
                 logger.exception(f'Check worker failed. Will retry in 60 seconds...')
-            sleep(60)
+            sleep(30)
 
     def run_background(self):
         self._check_thread = threading.Thread(target=self.run, name='worker-checker')
@@ -128,3 +131,9 @@ class WorkerManager:
                 worker = Worker()
                 worker.start()
                 self.workers[i] = worker
+            else:
+                worker_p = psutil.Process(worker.pid)
+                for subp in worker_p.children(recursive=True):
+                    if subp.is_running() and time() - subp.create_time() > app_config.MAX_EXECUTION_TIME:
+                        logger.info(f'Worker {subp.pid} is running for {time() - subp.create_time()} seconds. Terminating...')
+                        subp.kill()
