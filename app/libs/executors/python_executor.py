@@ -56,7 +56,7 @@ class PythonExecutor(ScriptExecutor):
         self.timeout = timeout
         self.memory_limit = (
             memory_limit + 1024 * 1024 * 1024  # extra 1GB for python overhead
-            if memory_limit is not None
+            if memory_limit
             else None
         )
         self.python_path = python_path
