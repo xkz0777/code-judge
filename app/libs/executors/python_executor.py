@@ -32,10 +32,10 @@ def _exec_limit_memory(maxsize):
     resource.setrlimit(resource.RLIMIT_AS, (maxsize, hard))
 
 
-if {{timeout}}:
+if {{timeout}} != 0:
     _exec_set_max_runtime({{timeout}})
 
-if {{memory_limit}}:
+if {{memory_limit}} != 0:
     _exec_limit_memory({{memory_limit}})
 
 _exec_time_start = time.perf_counter()
@@ -54,7 +54,7 @@ print(f"{DURATION_MARK}{{_exec_duration}}", flush=True)
 class PythonExecutor(ScriptExecutor):
     def __init__(self, python_path: str, timeout: int = None, memory_limit: int = None):
         self.timeout = timeout
-        self.memory_limit = memory_limit
+        self.memory_limit = memory_limit + 1024 * 1024 * 1024  # extra 1GB for python overhead
         self.python_path = python_path
 
     @contextmanager
