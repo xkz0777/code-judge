@@ -132,8 +132,11 @@ class WorkerManager:
                 worker.start()
                 self.workers[i] = worker
             else:
-                worker_p = psutil.Process(worker.pid)
-                for subp in worker_p.children(recursive=True):
-                    if subp.is_running() and time() - subp.create_time() > app_config.MAX_EXECUTION_TIME:
-                        logger.info(f'Worker {subp.pid} is running for {time() - subp.create_time()} seconds. Terminating...')
-                        subp.kill()
+                try:
+                    worker_p = psutil.Process(worker.pid)
+                    for subp in worker_p.children(recursive=True):
+                        if subp.is_running() and time() - subp.create_time() > app_config.MAX_EXECUTION_TIME:
+                            logger.info(f'Worker {subp.pid} is running for {time() - subp.create_time()} seconds. Terminating...')
+                            subp.kill()
+                except Exception:
+                    logger.exception(f'Failed to check worker {worker.pid}')
