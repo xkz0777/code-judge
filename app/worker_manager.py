@@ -125,18 +125,30 @@ class WorkerManager:
         self._check_thread.start()
 
     def _check_workers(self):
+        failed_workers = 0
+        busy_workers = 0
+        hanged_workers = 0
         for i, worker in enumerate(self.workers):
             if not worker.is_alive():
                 logger.error('Worker dead. Restarting...')
                 worker = Worker()
                 worker.start()
                 self.workers[i] = worker
+                failed_workers += 1
             else:
                 try:
                     worker_p = psutil.Process(worker.pid)
+                    is_busy = 0
+                    is_hanged = 0
                     for subp in worker_p.children(recursive=True):
+                        is_busy = 1
                         if subp.is_running() and time() - subp.create_time() > app_config.MAX_EXECUTION_TIME:
+                            is_hanged = 1
                             logger.info(f'Worker {subp.pid} is running for {time() - subp.create_time()} seconds. Terminating...')
                             subp.kill()
+                    busy_workers += is_busy
+                    hanged_workers += is_hanged
                 except Exception:
                     logger.exception(f'Failed to check worker {worker.pid}')
+
+        logger.info(f'Total: {len(self.workers)}, free: {len(self.workers) - busy_workers} failed: {failed_workers}, busy: {busy_workers}, hanged: {hanged_workers}')
