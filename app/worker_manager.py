@@ -47,13 +47,13 @@ def executor_factory(type: str) -> ScriptExecutor:
         return PythonExecutor(
             python_path=app_config.PYTHON_EXECUTOR_PATH,
             timeout=app_config.MAX_EXECUTION_TIME,
-            memory_limit=app_config.MAX_MEMORY * 1024 * 1024,
+            max_memory=app_config.MAX_MEMORY * 1024 * 1024,
         )
     elif type == 'cpp':
         return CppExecutor(
             compiler_path=app_config.CPP_COMPILER_PATH,
             timeout=app_config.MAX_EXECUTION_TIME,
-            memory_limit=app_config.MAX_MEMORY * 1024 * 1024,
+            max_memory=app_config.MAX_MEMORY * 1024 * 1024,
         )
     else:
         raise ValueError(f'Unsupported type: {type}')
