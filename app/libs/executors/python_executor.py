@@ -15,6 +15,10 @@ import resource
 import os
 import time
 
+# preventing multi-threading for numpy
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
+
+
 def _exec_set_alarm_timeout(timeout):
     signal.signal(signal.SIGALRM, _exec_time_exceeded)
     signal.alarm(timeout)
