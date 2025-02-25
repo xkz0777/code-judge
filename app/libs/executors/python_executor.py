@@ -34,7 +34,8 @@ def _exec_set_max_runtime(seconds):
     # setting up the resource limit
     soft, hard = resource.getrlimit(resource.RLIMIT_CPU)
     resource.setrlimit(resource.RLIMIT_CPU, (seconds, hard))
-    signal.signal(signal.SIGXCPU, _exec_time_exceeded)
+    # Just use its default behavior to terminate the process.
+    # signal.signal(signal.SIGXCPU, _exec_time_exceeded)
 
 
 def _exec_limit_memory(maxsize):
