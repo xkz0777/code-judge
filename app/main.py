@@ -1,6 +1,8 @@
+from contextlib import asynccontextmanager
 import logging
 
 import fastapi
+import uvicorn.logging
 
 from app.model import Submission, SubmissionResult, WorkPayload
 from app.worker_manager import WorkerManager
@@ -8,7 +10,24 @@ from app.work_queue import connect_queue
 import app.config as app_config
 
 logger = logging.getLogger(__name__)
-app = fastapi.FastAPI()
+
+
+@asynccontextmanager
+async def _set_access_log(_: fastapi.FastAPI):
+    logger = logging.getLogger('uvicorn.access')
+    console_formatter = uvicorn.logging.AccessFormatter(
+        '%(levelprefix)s %(asctime)s - %(client_addr)s - "%(request_line)s" %(status_code)s',
+        datefmt="%Y-%m-%d %H:%M:%S",
+        use_colors=True,
+    )
+    old = logger.handlers[0].formatter
+    logger.handlers[0].setFormatter(console_formatter)
+    yield
+    logger.handlers[0].setFormatter(old)
+
+
+app = fastapi.FastAPI(lifespan=_set_access_log)
+
 
 redis_queue = connect_queue(True)
 if app_config.RUN_WORKERS:
