@@ -1,10 +1,12 @@
 from contextlib import asynccontextmanager
 import logging
+from time import time
+import asyncio
 
 import fastapi
 import uvicorn.logging
 
-from app.model import Submission, SubmissionResult, WorkPayload
+from app.model import Submission, SubmissionResult, WorkPayload, BatchSubmission, BatchSubmissionResult
 from app.worker_manager import WorkerManager
 from app.work_queue import connect_queue
 import app.config as app_config
@@ -36,6 +38,24 @@ if app_config.RUN_WORKERS:
     worker_manager.run_background()
 
 
+async def _judge(submission: Submission):
+    start_time = time()
+    try:
+        payload = WorkPayload(submission=submission)
+        payload_json = payload.model_dump_json()
+        await redis_queue.push(app_config.WORK_QUEUE_NAME, payload_json)
+        result_queue_name = f'{app_config.REDIS_RESULT_PREFIX}{payload.work_id}'
+        result_json = await redis_queue.block_pop(result_queue_name, app_config.MAX_EXECUTION_TIME)
+        await redis_queue.delete(result_queue_name)
+        if result_json is None: # timeout
+            return SubmissionResult(sub_id=submission.sub_id, success=False, cost=time() - start_time)
+        else:
+            return SubmissionResult.model_validate_json(result_json[1])
+    except Exception as e:
+        logger.exception(f'Failed to judge submission {submission.sub_id}')
+        return SubmissionResult(sub_id=submission.sub_id, success=False, cost=time() - start_time)
+
+
 @app.get('/ping')
 def ping():
     return 'pong'
@@ -43,13 +63,12 @@ def ping():
 
 @app.post('/judge')
 async def judge(submission: Submission):
-    payload = WorkPayload(submission=submission)
-    payload_json = payload.model_dump_json()
-    await redis_queue.push(app_config.WORK_QUEUE_NAME, payload_json)
-    result_queue_name = f'{app_config.REDIS_RESULT_PREFIX}{payload.work_id}'
-    result_json = await redis_queue.block_pop(result_queue_name, app_config.MAX_EXECUTION_TIME)
-    await redis_queue.delete(result_queue_name)
-    if result_json is None: # timeout
-        return SubmissionResult(sub_id=submission.sub_id, success=False, cost=0)
-    else:
-        return SubmissionResult.model_validate_json(result_json[1])
+    return await _judge(submission)
+
+
+@app.post('/judge/batch')
+async def judge(batch_sub: BatchSubmission):
+    return BatchSubmissionResult(
+        sub_id=batch_sub.sub_id,
+        results=await asyncio.gather(*[_judge(sub) for sub in batch_sub.submissions])
+    )
