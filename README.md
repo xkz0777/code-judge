@@ -199,7 +199,7 @@ If you don't want to use them, you can also run workers/api in multiple machines
 1. Setup redis server in one machine or use a cloud redis server.
    Assume you are using azure redis server.
    1. Create a redis server in azure.
-   2. Get the redis server uri from the azure portal. Please note that the uri should be in the format of `rediss+cluster://<username>:<password>@<host>:<port>`.
+   2. Get the redis server uri from the azure portal. Please note that the uri should be in the format of `rediss+cluster://:<access key>@<host>:<port>`.
    Here `rediss` means tls. If tls is disabled, use `redis`.
    And `+cluster` means redis cluster. If high availability is disbled, remove `+cluster`.
 2. Run workers in all worker nodes with the same redis uri. You can reuse the training servers, as workers don't use GPU.
