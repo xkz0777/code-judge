@@ -140,8 +140,8 @@ and then you can use the following command to test the api.
   ```
 
   # API
-  ## /judge
-  ### Submission
+  ## POST /judge
+  ### request (Submission)
   ```python
     # the submission id
     sub_id: str | None = None
@@ -152,8 +152,8 @@ and then you can use the following command to test the api.
     # the standard input of the code (for example, input() function in python)
     input: str | None = None
     # the expected output of the code
-    # we will compare the output of the code with this value
-    expected_output: str
+    # we will compare the output of the code with this value if it is None
+    expected_output: str | None = None
   ```
   ### Response
   ```python
@@ -175,6 +175,57 @@ and then you can use the following command to test the api.
   ```
 
 ## /judge/batch
+  ### Request
+  ```python
+      sub_id: str | None = None
+      type: Literal['batch'] = 'batch'
+      # list of submissions
+      submissions: list[Submission]
+  ```
+
+  ### Response
+  ```python
+    sub_id: str
+    # list of submission results
+    results: list[SubmissionResult]
+  ```
+
+   ## POST /run
+  ### request (Submission)
+  ```python
+    # the submission id
+    sub_id: str | None = None
+    # the language type, currently only python and cpp are supported
+    type: Literal['python', 'cpp']
+    # the solution code
+    solution: str
+    # the standard input of the code (for example, input() function in python)
+    input: str | None = None
+    # the expected output of the code
+    # we will compare the output of the code with this value if it is None
+    expected_output: str | None = None
+  ```
+  ### Response
+  ```python
+    # the submission id
+    sub_id: str
+    # whether the run is successful
+    success: bool
+    # the time cost of the code in seconds
+    cost: float
+    # the reason of failure
+    # '': no reason, plain success or plain failure
+    # 'worker_timeout': the code takes too long to run
+    # 'queue_timeout': the code takes too long to be processed.
+    #   This is usually caused by the workers being too busy.
+    # 'internal_error': The failure is caused by the internal error of the system.
+    #   This can be caused by the redis server being down or exceeding the max connection limit.
+    reason: str
+    stdout: str
+    stderr: str
+  ```
+
+## /run/batch
   ### Request
   ```python
       sub_id: str | None = None
@@ -212,4 +263,5 @@ If you don't want to use them, you can also run workers/api in multiple machines
 2. To make your client more robust, you'd better:
   - check http status code. We are trying to always return 200, but it is not guaranteed.
   - check the `reason` field in the response. For example, `queue_timeout` means the workers are busy. You should reduce the concurrent requests.
+  - make sure you have set timeout for the request(i.e.`requests.post(..., timeout=...)`).
 3. You should check the log of the api and workers to see if there are any errors.

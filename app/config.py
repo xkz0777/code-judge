@@ -15,6 +15,7 @@ REDIS_RESULT_EXPIRE = int(env('REDIS_RESULT_EXPIRE', 3600))  # default 1 hour
 REDIS_WORK_QUEUE_NAME = env('WORK_QUEUE_NAME', f'{REDIS_KEY_PREFIX}work-queue')
 
 MAX_EXECUTION_TIME = int(env('MAX_EXECUTION_TIME', 10))  # default 10 seconds
+MAX_STDOUT_ERROR_LENGTH = int(env('MAX_STDOUT_ERROR_LENGTH', 1000))
 # default 15 seconds
 # additional 5 seconds for communication between judge server and judge worker
 MAX_QUEUE_WAIT_TIME = int(env('MAX_QUEUE_WAIT_TIME', MAX_EXECUTION_TIME + 5))

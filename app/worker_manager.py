@@ -65,11 +65,18 @@ def judge(sub: Submission):
         executor = executor_factory(sub.type)
         result = executor.execute_script(sub.solution, sub.input)
         # TODO: make this more robust
-        success = result.success and result.stdout.strip() == sub.expected_output.strip()
+        success = result.success
+        if sub.expected_output is not None:
+            success = success and result.stdout.strip() == sub.expected_output.strip()
         if not success:
             save_error_case(sub, result)
         sub_result = SubmissionResult(
             sub_id=sub.sub_id, success=success, cost=result.cost,
+            # only save stdout and stderr if expected_output is None
+            stdout=result.stdout[:app_config.MAX_STDOUT_ERROR_LENGTH]
+                if result.stdout is not None else None,
+            stderr=result.stderr[:app_config.MAX_STDOUT_ERROR_LENGTH]
+                if result.stdout is not None else None,
             reason=ResultReason.WORKER_TIMEOUT
                 if result.exit_code == TIMEOUT_EXIT_CODE
                 else ResultReason.UNSPECIFIED

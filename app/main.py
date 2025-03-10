@@ -7,7 +7,7 @@ import fastapi
 import uvicorn.logging
 
 from app.model import Submission, SubmissionResult, WorkPayload, \
-    BatchSubmission, BatchSubmissionResult, ResultReason
+    BatchSubmission, BatchSubmissionResult, ResultReason, JudgeResult, BatchJudgeResult
 from app.libs.utils import chunkify
 from app.worker_manager import WorkerManager
 from app.work_queue import connect_queue
@@ -40,7 +40,7 @@ if app_config.RUN_WORKERS:
     worker_manager.run_background()
 
 
-def to_result(submission, start_time, result_json):
+def _to_result(submission, start_time, result_json):
     if result_json is None: # timeout
         return SubmissionResult(sub_id=submission.sub_id, success=False, cost=time() - start_time, reason=ResultReason.QUEUE_TIMEOUT)
     else:
@@ -50,7 +50,22 @@ def to_result(submission, start_time, result_json):
         return result
 
 
-async def _judge_batch(subs: list[Submission]):
+async def _run(submission: Submission):
+    start_time = time()
+    try:
+        payload = WorkPayload(submission=submission)
+        payload_json = payload.model_dump_json()
+        await redis_queue.push(app_config.REDIS_WORK_QUEUE_NAME, payload_json)
+        result_queue_name = f'{app_config.REDIS_RESULT_PREFIX}{payload.work_id}'
+        result_json = await redis_queue.block_pop(result_queue_name, app_config.MAX_QUEUE_WAIT_TIME)
+        await redis_queue.delete(result_queue_name)
+        return _to_result(submission, start_time, result_json)
+    except Exception:
+        logger.exception(f'Failed to judge submission {submission.sub_id}')
+        return SubmissionResult(sub_id=submission.sub_id, success=False, cost=time() - start_time, reason=ResultReason.INTERNAL_ERROR)
+
+
+async def _run_batch_impl(subs: list[Submission]):
     start_time = time()
     chunks = list(chunkify(subs, app_config.MAX_BATCH_CHUNK_SIZE))
     payload_chunks = [
@@ -71,7 +86,7 @@ async def _judge_batch(subs: list[Submission]):
             # no wait
             result_json = await redis_queue.pop(result_queue_name)
         await redis_queue.delete(result_queue_name)
-        return to_result(payload.submission, start_time, result_json)
+        return _to_result(payload.submission, start_time, result_json)
 
     # submit all submissions to the queue
     for chunk in payload_chunks:
@@ -88,41 +103,15 @@ async def _judge_batch(subs: list[Submission]):
     return results
 
 
-async def _judge(submission: Submission):
-    start_time = time()
-    try:
-        payload = WorkPayload(submission=submission)
-        payload_json = payload.model_dump_json()
-        await redis_queue.push(app_config.REDIS_WORK_QUEUE_NAME, payload_json)
-        result_queue_name = f'{app_config.REDIS_RESULT_PREFIX}{payload.work_id}'
-        result_json = await redis_queue.block_pop(result_queue_name, app_config.MAX_QUEUE_WAIT_TIME)
-        await redis_queue.delete(result_queue_name)
-        return to_result(submission, start_time, result_json)
-    except Exception:
-        logger.exception(f'Failed to judge submission {submission.sub_id}')
-        return SubmissionResult(sub_id=submission.sub_id, success=False, cost=time() - start_time, reason=ResultReason.INTERNAL_ERROR)
-
-
-@app.get('/ping')
-def ping():
-    return 'pong'
-
-
-@app.post('/judge')
-async def judge(submission: Submission):
-    return await _judge(submission)
-
-
-@app.post('/judge/batch')
-async def judge(batch_sub: BatchSubmission):
+async def _run_batch(batch_sub: BatchSubmission):
     if not app_config.MAX_BATCH_CHUNK_SIZE:
         return BatchSubmissionResult(
             sub_id=batch_sub.sub_id,
-            results=await asyncio.gather(*[_judge(sub) for sub in batch_sub.submissions])
+            results=await asyncio.gather(*[_run(sub) for sub in batch_sub.submissions])
         )
     else:
         try:
-            results = await _judge_batch(batch_sub.submissions)
+            results = await _run_batch_impl(batch_sub.submissions)
         except Exception:
             logger.exception(f'Failed to judge batch submission {batch_sub.sub_id}')
             results=[
@@ -137,3 +126,27 @@ async def judge(batch_sub: BatchSubmission):
             sub_id=batch_sub.sub_id,
             results=results
         )
+
+@app.get('/ping')
+def ping():
+    return 'pong'
+
+
+@app.post('/run')
+async def run(submission: Submission):
+    return await _run(submission)
+
+
+@app.post('/run/batch')
+async def run_batch(batch_sub: BatchSubmission):
+    return await _run_batch(batch_sub)
+
+
+@app.post('/judge')
+async def judge(submission: Submission):
+    return JudgeResult.from_submission_result(await _run(submission))
+
+
+@app.post('/judge/batch')
+async def judge_batch(batch_sub: BatchSubmission):
+    return BatchJudgeResult.from_submission_result(await _run_batch(batch_sub))

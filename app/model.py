@@ -11,7 +11,7 @@ class Submission(BaseModel):
     options: dict[str, str] | None = None
     solution: str
     input: str | None = None
-    expected_output: str
+    expected_output: str | None = None
 
     def model_post_init(self, __context):
         self.sub_id = self.sub_id or str(uuid.uuid4())
@@ -28,6 +28,8 @@ class SubmissionResult(BaseModel):
     sub_id: str
     success: bool
     cost: float
+    stdout: str
+    stderr: str
     reason: ResultReason = ResultReason.UNSPECIFIED
 
 
@@ -43,6 +45,34 @@ class BatchSubmission(BaseModel):
 class BatchSubmissionResult(BaseModel):
     sub_id: str
     results: list[SubmissionResult]
+
+
+class JudgeResult(BaseModel):
+    sub_id: str
+    success: bool
+    cost: float
+    reason: ResultReason = ResultReason.UNSPECIFIED
+
+    @classmethod
+    def from_submission_result(cls, result: SubmissionResult):
+        return cls(
+            sub_id=result.sub_id,
+            success=result.success,
+            cost=result.cost,
+            reason=result.reason
+        )
+
+
+class BatchJudgeResult(BaseModel):
+    sub_id: str
+    results: list[JudgeResult]
+
+    @classmethod
+    def from_submission_result(cls, result: BatchSubmissionResult):
+        return cls(
+            sub_id=result.sub_id,
+            results=[JudgeResult.from_submission_result(r) for r in result.results]
+        )
 
 
 class WorkPayload(BaseModel):

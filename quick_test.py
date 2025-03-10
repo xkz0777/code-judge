@@ -2,8 +2,8 @@ import requests
 from time import time
 
 
-def test_cpp_judge():
-    url = 'http://localhost:8000/judge'
+def test_cpp(type):
+    url = f'http://localhost:8000/{type}'
     data = {
         "type": "cpp",
         "solution": """#include <cstdio>
@@ -30,8 +30,8 @@ int main(){printf("a");return 0;}
     assert not response.json()['success']
 
 
-def test_python_judge():
-    url = 'http://localhost:8000/judge'
+def test_python(type):
+    url = f'http://localhost:8000/{type}'
     data = {
         "type": "python",
         "solution": "print(input())",
@@ -55,8 +55,8 @@ def test_python_judge():
     assert not response.json()['success']
 
 
-def test_python_timeout_judge():
-    url = 'http://localhost:8000/judge'
+def test_python_timeout(type):
+    url = f'http://localhost:8000/{type}'
     data = {
         "type": "python",
         "solution": "print(input())",
@@ -69,8 +69,8 @@ def test_python_timeout_judge():
     assert not response.json()['success']
 
 
-def test_batch_judge():
-    url = 'http://localhost:8000/judge/batch'
+def test_batch(type):
+    url = f'http://localhost:8000/{type}/batch'
     data = {
         'type': 'batch',
         "submissions": [{
@@ -110,8 +110,8 @@ int main(){sleep(3);printf("a");return 0;}
     assert results[3]['success']
 
 
-def test_batch_judge_timeout():
-    url = 'http://localhost:8000/judge/batch'
+def test_batch_timeout(type):
+    url = f'http://localhost:8000/{type}/batch'
     data = {
         'type': 'batch',
         "submissions": [{
@@ -159,13 +159,18 @@ def test_batch_judge_timeout():
     assert not results[4]['success']
     assert results[5]['success']
 
-if __name__ == "__main__":
+def test_all(type):
     start = time()
-    test_batch_judge_timeout()
+    test_batch_timeout(type)
     end = time()
     print(f'Time taken: {end - start} seconds')
 
-    test_cpp_judge()
-    test_python_judge()
-    test_batch_judge()
-    test_python_timeout_judge()
+    test_cpp(type)
+    test_python(type)
+    test_batch(type)
+    test_python_timeout(type)
+
+
+if __name__ == '__main__':
+    test_all('judge')
+    test_all('run')
