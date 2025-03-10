@@ -138,3 +138,69 @@ and then you can use the following command to test the api.
     })
   print(response.json())
   ```
+
+  # API
+  ## /judge
+  ### Submission
+  ```python
+    # the submission id
+    sub_id: str | None = None
+    # the language type, currently only python and cpp are supported
+    type: Literal['python', 'cpp']
+    # the solution code
+    solution: str
+    # the standard input of the code (for example, input() function in python)
+    input: str | None = None
+    # the expected output of the code
+    # we will compare the output of the code with this value
+    expected_output: str
+  ```
+  ### Response
+  ```python
+    # the submission id
+    sub_id: str
+    # whether the checking is successful
+    # true if the output of the code is equal to the expected output
+    success: bool
+    # the time cost of the code in seconds
+    cost: float
+    # the reason of failure
+    # '': no reason, plain success or plain failure
+    # 'worker_timeout': the code takes too long to run
+    # 'queue_timeout': the code takes too long to be processed.
+    #   This is usually caused by the workers being too busy.
+    # 'internal_error': The failure is caused by the internal error of the system.
+    #   This can be caused by the redis server being down or exceeding the max connection limit.
+    reason: str
+  ```
+
+## /judge/batch
+  ### Request
+  ```python
+      sub_id: str | None = None
+      type: Literal['batch'] = 'batch'
+      # list of submissions
+      submissions: list[Submission]
+  ```
+
+  ### Response
+  ```python
+    sub_id: str
+    # list of submission results
+    results: list[SubmissionResult]
+  ```
+
+# Mutiple node Deployment without orchestration tools
+
+You can deploy the projects with k8s, docker swarm or other orchestration tools.
+
+If you don't want to use them, you can also run workers/api in multiple machines with same redis.
+
+1. Setup redis server in one machine or use a cloud redis server.
+   Assume you are using azure redis server.
+   1. Create a redis server in azure.
+   2. Get the redis server uri from the azure portal. Please note that the uri should be in the format of `rediss+cluster://<username>:<password>@<host>:<port>`.
+   Here `rediss` means tls. If tls is disabled, use `redis`.
+   And `+cluster` means redis cluster. If high availability is disbled, remove `+cluster`.
+2. Run workers in all worker nodes with the same redis uri. You can reuse the training servers, as workers don't use GPU.
+3. Run api in api nodes with the same redis uri. You can use one api node or multiple api nodes.
