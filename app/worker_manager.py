@@ -10,9 +10,10 @@ import traceback
 import psutil
 
 from app.libs.executors.executor import ProcessExecuteResult
-from app.model import Submission, SubmissionResult, WorkPayload
+from app.model import Submission, SubmissionResult, WorkPayload, ResultReason
 from app.libs.executors.python_executor import PythonExecutor, ScriptExecutor
 from app.libs.executors.cpp_executor import CppExecutor
+from app.libs.executors.executor import TIMEOUT_EXIT_CODE
 import app.config as app_config
 from app.work_queue import connect_queue
 
@@ -68,13 +69,16 @@ def judge(sub: Submission):
         if not success:
             save_error_case(sub, result)
         sub_result = SubmissionResult(
-            sub_id=sub.sub_id, success=success, cost=result.cost
+            sub_id=sub.sub_id, success=success, cost=result.cost,
+            reason=ResultReason.WORKER_TIMEOUT
+                if result.exit_code == TIMEOUT_EXIT_CODE
+                else ResultReason.UNSPECIFIED
         )
     except Exception as e:
         logger.exception(f'Worker failed to judge submission {sub.sub_id}')
         save_error_case(sub, None, e)
         sub_result = SubmissionResult(
-            sub_id=sub.sub_id, success=False, cost=0
+            sub_id=sub.sub_id, success=False, cost=0, reason=ResultReason.INTERNAL_ERROR
         )
     return sub_result
 
@@ -83,7 +87,7 @@ class Worker(Process):
     def _run_loop(self):
         redis_queue = connect_queue(False)
         while True:
-            _, payload_json = redis_queue.block_pop(app_config.WORK_QUEUE_NAME)
+            _, payload_json = redis_queue.block_pop(app_config.REDIS_WORK_QUEUE_NAME)
             payload = WorkPayload.model_validate_json(payload_json)
             result = judge(payload.submission)
             result_queue_name = f'{app_config.REDIS_RESULT_PREFIX}{payload.work_id}'

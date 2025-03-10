@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Literal
 import uuid
 
@@ -16,10 +17,18 @@ class Submission(BaseModel):
         self.sub_id = self.sub_id or str(uuid.uuid4())
 
 
+class ResultReason(Enum):
+    UNSPECIFIED = ''
+    INTERNAL_ERROR = 'internal_error'
+    WORKER_TIMEOUT = 'worker_timeout'
+    QUEUE_TIMEOUT = 'queue_timeout'
+
+
 class SubmissionResult(BaseModel):
     sub_id: str
     success: bool
     cost: float
+    reason: ResultReason = ResultReason.UNSPECIFIED
 
 
 class BatchSubmission(BaseModel):

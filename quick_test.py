@@ -53,6 +53,20 @@ def test_python_judge():
     assert not response.json()['success']
 
 
+def test_python_timeout_judge():
+    url = 'http://localhost:8000/judge'
+    data = {
+        "type": "python",
+        "solution": "print(input())",
+        "input": "",
+        "expected_output": "a"
+    }
+    response = requests.post(url, json=data)
+    print(response.json())
+    assert response.status_code == 200
+    assert not response.json()['success']
+
+
 def test_batch_judge():
     url = 'http://localhost:8000/judge/batch'
     data = {
@@ -98,3 +112,4 @@ if __name__ == "__main__":
     test_cpp_judge()
     test_python_judge()
     test_batch_judge()
+    test_python_timeout_judge()

@@ -6,7 +6,8 @@ import asyncio
 import fastapi
 import uvicorn.logging
 
-from app.model import Submission, SubmissionResult, WorkPayload, BatchSubmission, BatchSubmissionResult
+from app.model import Submission, SubmissionResult, WorkPayload, \
+    BatchSubmission, BatchSubmissionResult, ResultReason
 from app.worker_manager import WorkerManager
 from app.work_queue import connect_queue
 import app.config as app_config
@@ -43,17 +44,20 @@ async def _judge(submission: Submission):
     try:
         payload = WorkPayload(submission=submission)
         payload_json = payload.model_dump_json()
-        await redis_queue.push(app_config.WORK_QUEUE_NAME, payload_json)
+        await redis_queue.push(app_config.REDIS_WORK_QUEUE_NAME, payload_json)
         result_queue_name = f'{app_config.REDIS_RESULT_PREFIX}{payload.work_id}'
-        result_json = await redis_queue.block_pop(result_queue_name, app_config.MAX_EXECUTION_TIME)
+        result_json = await redis_queue.block_pop(result_queue_name, app_config.MAX_QUEUE_WAIT_TIME)
         await redis_queue.delete(result_queue_name)
         if result_json is None: # timeout
-            return SubmissionResult(sub_id=submission.sub_id, success=False, cost=time() - start_time)
+            return SubmissionResult(sub_id=submission.sub_id, success=False, cost=time() - start_time, reason=ResultReason.QUEUE_TIMEOUT)
         else:
-            return SubmissionResult.model_validate_json(result_json[1])
-    except Exception as e:
+            result = SubmissionResult.model_validate_json(result_json[1])
+            if not result.success and result.cost >= app_config.MAX_EXECUTION_TIME:
+                result.reason = ResultReason.WORKER_TIMEOUT
+            return result
+    except Exception:
         logger.exception(f'Failed to judge submission {submission.sub_id}')
-        return SubmissionResult(sub_id=submission.sub_id, success=False, cost=time() - start_time)
+        return SubmissionResult(sub_id=submission.sub_id, success=False, cost=time() - start_time, reason=ResultReason.INTERNAL_ERROR)
 
 
 @app.get('/ping')
