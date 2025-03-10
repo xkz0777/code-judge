@@ -62,9 +62,14 @@ async def _judge_batch(subs: list[Submission]):
         payload_json = payload.model_dump_json()
         await redis_queue.push(app_config.REDIS_WORK_QUEUE_NAME, payload_json)
 
-    async def _get_result(payload: WorkPayload):
+    async def _get_result(payload: WorkPayload, max_wait_time):
+        """max_wait_time <= 0 means no wait (which is different from block_pop)"""
         result_queue_name = f'{app_config.REDIS_RESULT_PREFIX}{payload.work_id}'
-        result_json = await redis_queue.block_pop(result_queue_name, app_config.MAX_QUEUE_WAIT_TIME)
+        if max_wait_time > 0:
+            result_json = await redis_queue.block_pop(result_queue_name, max_wait_time)
+        else:
+            # no wait
+            result_json = await redis_queue.pop(result_queue_name)
         await redis_queue.delete(result_queue_name)
         return to_result(payload.submission, start_time, result_json)
 
@@ -73,9 +78,12 @@ async def _judge_batch(subs: list[Submission]):
         await asyncio.gather(*[_submit(pl) for pl in chunk])
 
     results = []
+    max_wait_time = app_config.MAX_QUEUE_WAIT_TIME
+    wait_start_time = time()
     for chunk in payload_chunks:
         # get all results from the queue
-        chunk_results = await asyncio.gather(*[_get_result(pl) for pl in chunk])
+        left_time = int(max_wait_time - (time() - wait_start_time))
+        chunk_results = await asyncio.gather(*[_get_result(pl, left_time) for pl in chunk])
         results.extend(chunk_results)
     return results
 

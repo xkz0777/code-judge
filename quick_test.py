@@ -1,4 +1,6 @@
 import requests
+from time import time
+
 
 def test_cpp_judge():
     url = 'http://localhost:8000/judge'
@@ -108,7 +110,61 @@ int main(){sleep(3);printf("a");return 0;}
     assert results[3]['success']
 
 
+def test_batch_judge_timeout():
+    url = 'http://localhost:8000/judge/batch'
+    data = {
+        'type': 'batch',
+        "submissions": [{
+        "type": "python",
+        "solution": "print(input())",
+        "input": "",
+        "expected_output": "b"
+        }, {
+            "type": "python",
+            "solution": "print(input())",
+            "input": "a",
+            "expected_output": "a"
+        }, {
+        "type": "python",
+        "solution": "print(input())",
+        "input": "",
+        "expected_output": "b"
+        }, {
+            "type": "python",
+            "solution": "print(input())",
+            "input": "a",
+            "expected_output": "a"
+        },{
+        "type": "python",
+        "solution": "print(input())",
+        "input": "",
+        "expected_output": "b"
+        }, {
+            "type": "python",
+            "solution": "print(input())",
+            "input": "a",
+            "expected_output": "a"
+        }]
+    }
+    response = requests.post(url, json=data)
+    print(response.json())
+    assert response.status_code == 200
+    results = response.json()['results']
+
+    assert len(results) == 6
+    assert not results[0]['success']
+    assert results[1]['success']
+    assert not results[2]['success']
+    assert results[3]['success']
+    assert not results[4]['success']
+    assert results[5]['success']
+
 if __name__ == "__main__":
+    start = time()
+    test_batch_judge_timeout()
+    end = time()
+    print(f'Time taken: {end - start} seconds')
+
     test_cpp_judge()
     test_python_judge()
     test_batch_judge()
