@@ -204,3 +204,12 @@ If you don't want to use them, you can also run workers/api in multiple machines
    And `+cluster` means redis cluster. If high availability is disbled, remove `+cluster`.
 2. Run workers in all worker nodes with the same redis uri. You can reuse the training servers, as workers don't use GPU.
 3. Run api in api nodes with the same redis uri. You can use one api node or multiple api nodes.
+
+
+# Client Implementation
+
+1. Batch API is preferred.
+2. To make your client more robust, you'd better:
+  - check http status code. We are trying to always return 200, but it is not guaranteed.
+  - check the `reason` field in the response. For example, `queue_timeout` means the workers are busy. You should reduce the concurrent requests.
+3. You should check the log of the api and workers to see if there are any errors.
