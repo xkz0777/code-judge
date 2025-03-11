@@ -28,8 +28,8 @@ class SubmissionResult(BaseModel):
     sub_id: str
     success: bool
     cost: float
-    stdout: str
-    stderr: str
+    stdout: str | None = None
+    stderr: str | None = None
     reason: ResultReason = ResultReason.UNSPECIFIED
 
 

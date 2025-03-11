@@ -21,6 +21,7 @@ class RedisQueue:
             redis_uri,
             socket_connect_timeout=120,
             socket_keepalive=True,
+            health_check_interval=30,
             socket_keepalive_options={socket.TCP_KEEPIDLE: 2, socket.TCP_KEEPINTVL: 1, socket.TCP_KEEPCNT: 2}
         )
 
