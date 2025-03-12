@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class RedisQueue:
-    def __init__(self, redis_uri, queue_name, *, enable_log=False, socket_timeout: int = None, is_async: bool = False):
+    def __init__(self, redis_uri, queue_name, *, socket_timeout: int = None, is_async: bool = False):
         self.redis_uri = redis_uri
         self.is_async = is_async
         self.queue_name = queue_name
