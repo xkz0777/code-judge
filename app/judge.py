@@ -61,7 +61,7 @@ async def _judge_batch_impl(redis_queue, subs: list[Submission]):
             result_json = await redis_queue.block_pop(result_queue_name, max_wait_time)
         else:
             # no wait
-            result_json = await redis_queue.pop(result_queue_name)
+            result_json = result_queue_name, await redis_queue.pop(result_queue_name)
             if result_json is not None:
                 # align with block_pop, which will return a pair of result queue name and result json when success
                 result_json = result_queue_name, result_json
