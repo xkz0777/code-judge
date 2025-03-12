@@ -21,7 +21,11 @@ def _to_result(submission: Submission, start_time, result_json):
     if result_json is None: # timeout
         return SubmissionResult(sub_id=submission.sub_id, success=False, cost=time() - start_time, reason=ResultReason.QUEUE_TIMEOUT)
     else:
-        result = SubmissionResult.model_validate_json(result_json[1])
+        try:
+            result = SubmissionResult.model_validate_json(result_json[1])
+        except Exception as e:
+            logger.info(f'Failed to parse result json: {result_json}')
+            raise
         if not result.success and result.cost >= app_config.MAX_EXECUTION_TIME:
             result.reason = ResultReason.WORKER_TIMEOUT
         return result
@@ -62,6 +66,9 @@ async def _judge_batch_impl(redis_queue, subs: list[Submission]):
         else:
             # no wait
             result_json = await redis_queue.pop(result_queue_name)
+            if result_json is not None:
+                # align with block_pop, which will return a pair of result queue name and result json when success
+                result_json = result_queue_name, result_json
         await redis_queue.delete(result_queue_name)
         return _to_result(payload.submission, start_time, result_json)
 
