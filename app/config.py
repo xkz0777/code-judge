@@ -5,15 +5,6 @@ env = os.environ.get
 
 ERROR_CASE_SAVE_PATH = env('ERROR_CASE_SAVE_PATH', '')  # default empty, which means not save error case
 
-# TODO: support fakeredis for testing.
-REDIS_URI = env('REDIS_URI', '')
-if not REDIS_URI:
-    raise ValueError('REDIS_URI is not set')
-REDIS_KEY_PREFIX = env('REDIS_KEY_PREFIX', 'js:')
-REDIS_RESULT_PREFIX = env('REDIS_RESULT_QUEUE_PREFIX', f'{REDIS_KEY_PREFIX}result-queue:')
-REDIS_RESULT_EXPIRE = int(env('REDIS_RESULT_EXPIRE', 3600))  # default 1 hour
-REDIS_WORK_QUEUE_NAME = env('WORK_QUEUE_NAME', f'{REDIS_KEY_PREFIX}work-queue')
-
 MAX_EXECUTION_TIME = int(env('MAX_EXECUTION_TIME', 10))  # default 10 seconds
 MAX_STDOUT_ERROR_LENGTH = int(env('MAX_STDOUT_ERROR_LENGTH', 1000))
 # default 15 seconds
@@ -28,3 +19,16 @@ MAX_BATCH_CHUNK_SIZE = int(env('MAX_BATCH_CHUNK_SIZE', 2))  # 0 means no limit
 
 PYTHON_EXECUTOR_PATH = env('PYTHON_EXECUTOR_PATH', 'python3')
 CPP_COMPILER_PATH = env('CPP_COMPILER_PATH', 'g++')
+
+# TODO: support fakeredis for testing.
+REDIS_URI = env('REDIS_URI', '')
+if not REDIS_URI:
+    raise ValueError('REDIS_URI is not set')
+REDIS_KEY_PREFIX = env('REDIS_KEY_PREFIX', 'js:')
+REDIS_RESULT_PREFIX = env('REDIS_RESULT_QUEUE_PREFIX', f'{REDIS_KEY_PREFIX}result-queue:')
+REDIS_RESULT_EXPIRE = int(env('REDIS_RESULT_EXPIRE', 3600))  # default 1 hour
+REDIS_WORK_QUEUE_NAME = env('WORK_QUEUE_NAME', f'{REDIS_KEY_PREFIX}work-queue')
+
+# default 15 seconds
+# additional 5 seconds for communication between judge server and judge worker
+REDIS_SOCKET_TIMEOUT = int(env('REDIS_SOCKET_TIMEOUT', MAX_EXECUTION_TIME + 5))
