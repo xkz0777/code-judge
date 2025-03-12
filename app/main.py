@@ -36,7 +36,7 @@ async def _set_access_log(_: fastapi.FastAPI):
 app = fastapi.FastAPI(lifespan=_set_access_log)
 
 
-redis_queue = connect_queue(True, enable_log=True)
+redis_queue = connect_queue(True)
 if app_config.RUN_WORKERS:
     print('Running workers...')
     worker_manager =  WorkerManager()
