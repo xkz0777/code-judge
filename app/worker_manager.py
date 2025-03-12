@@ -153,7 +153,7 @@ class WorkerManager:
                     is_hanged = 0
                     for subp in worker_p.children(recursive=True):
                         is_busy = 1
-                        if subp.is_running() and time() - subp.create_time() > app_config.MAX_EXECUTION_TIME:
+                        if subp.is_running() and time() - subp.create_time() > app_config.MAX_QUEUE_WAIT_TIME:
                             is_hanged = 1
                             logger.info(f'Worker {subp.pid} is running for {time() - subp.create_time()} seconds. Terminating...')
                             subp.kill()

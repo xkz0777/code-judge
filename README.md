@@ -253,6 +253,8 @@ If you don't want to use them, you can also run workers/api in multiple machines
    2. Get the redis server uri from the azure portal. Please note that the uri should be in the format of `rediss+cluster://:<access key>@<host>:<port>`.
    Here `rediss` means tls. If tls is disabled, use `redis`.
    And `+cluster` means redis cluster. If high availability is disbled, remove `+cluster`.
+
+   **Warning**: Cluster redis is not well tested. Please use it at your own risk. From our test, it can lead to hang or max connection error.
 2. Run workers in all worker nodes with the same redis uri. You can reuse the training servers, as workers don't use GPU.
 3. Run api in api nodes with the same redis uri. You can use one api node or multiple api nodes.
 
