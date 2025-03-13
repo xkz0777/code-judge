@@ -6,7 +6,6 @@ services:
     restart: always
     environment:
       REDIS_URI: redis://redis
-      MAX_WORKERS: 10
     depends_on:
       redis:
         condition: service_healthy

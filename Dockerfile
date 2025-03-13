@@ -8,4 +8,4 @@ COPY . /app
 
 EXPOSE 8000
 
-CMD ["fastapi", "run", "--workers", "4", "app/main.py"]
+CMD ["uvicorn", "app.main:app", "--workers", "4", "--limit-max-requests", "1000"]

@@ -70,7 +70,7 @@ redis-server --daemonize yes
 
 ### Start them seperately
 ```bash
-REDIS_URI=redis://localhost:6379 RUN_WORKERS=0 fastapi run --workers 4 app/main.py
+REDIS_URI=redis://localhost:6379 uvicorn app.main:app --workers 4 --limit-max-requests 1000
 REDIS_URI=redis://localhost:6379 python run_workers.py
 ```
 
