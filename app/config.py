@@ -1,4 +1,5 @@
 import os
+from app.version import __version__ as version
 
 
 env = os.environ.get
@@ -10,6 +11,7 @@ MAX_STDOUT_ERROR_LENGTH = int(env('MAX_STDOUT_ERROR_LENGTH', 1000))
 # default 15 seconds
 # additional 5 seconds for communication between judge server and judge worker
 MAX_QUEUE_WAIT_TIME = int(env('MAX_QUEUE_WAIT_TIME', MAX_EXECUTION_TIME + 5))
+MAX_QUEUE_WORK_LIFE_TIME = int(env('MAX_QUEUE_WORK_LIFE_TIME', 4))  # default 4s
 MAX_MEMORY = int(env('MAX_MEMORY', 256))  # default 256 MB
 MAX_WORKERS = int(env('MAX_WORKERS', os.cpu_count())) or os.cpu_count()  # default os.cpu_count()
 
@@ -24,10 +26,10 @@ CPP_COMPILER_PATH = env('CPP_COMPILER_PATH', 'g++')
 REDIS_URI = env('REDIS_URI', '')
 if not REDIS_URI:
     raise ValueError('REDIS_URI is not set')
-REDIS_KEY_PREFIX = env('REDIS_KEY_PREFIX', 'js:')
-REDIS_RESULT_PREFIX = env('REDIS_RESULT_QUEUE_PREFIX', f'{REDIS_KEY_PREFIX}result-queue:')
-REDIS_RESULT_EXPIRE = int(env('REDIS_RESULT_EXPIRE', 3600))  # default 1 hour
-REDIS_WORK_QUEUE_NAME = env('WORK_QUEUE_NAME', f'{REDIS_KEY_PREFIX}work-queue')
+REDIS_KEY_PREFIX = env('REDIS_KEY_PREFIX', 'js')
+REDIS_RESULT_PREFIX = env('REDIS_RESULT_QUEUE_PREFIX', f'{REDIS_KEY_PREFIX}:{version}:result-queue:')
+REDIS_RESULT_EXPIRE = int(env('REDIS_RESULT_EXPIRE', 60))  # default 1 minute
+REDIS_WORK_QUEUE_NAME = env('WORK_QUEUE_NAME', f'{REDIS_KEY_PREFIX}:{version}:work-queue')
 
 # default 15 seconds
 # additional 5 seconds for communication between judge server and judge worker
