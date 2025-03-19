@@ -23,6 +23,7 @@ class ResultReason(Enum):
     INTERNAL_ERROR = 'internal_error'
     WORKER_TIMEOUT = 'worker_timeout'
     QUEUE_TIMEOUT = 'queue_timeout'
+    invalid_input = 'invalid_input'
 
 
 class SubmissionResult(BaseModel):
@@ -79,6 +80,7 @@ class BatchJudgeResult(BaseModel):
 class WorkPayload(BaseModel):
     work_id: str | None = None
     timestamp: float | None = None
+    long_running: bool = False
     submission: Submission | BatchSubmission = Field(..., discriminator='type')
 
     def model_post_init(self, __context):

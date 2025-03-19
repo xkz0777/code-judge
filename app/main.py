@@ -38,6 +38,16 @@ async def _set_access_log(_: fastapi.FastAPI):
     old = logger.handlers[0].formatter
     logger.handlers[0].setFormatter(console_formatter)
 
+    logger = logging.getLogger('app')
+    logger.setLevel(logging.INFO)
+    handler = logging.StreamHandler()
+    handler.setLevel(logging.INFO)
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
     # warm up the connection
     for _ in range(10):
         time_offset = await redis_queue.time() - time()
@@ -67,6 +77,11 @@ async def run_batch(batch_sub: BatchSubmission):
     return await _judge_batch(redis_queue, batch_sub)
 
 
+@app.post('/run/long-batch')
+async def run_long_batch(batch_sub: BatchSubmission):
+    return await _judge_batch(redis_queue, batch_sub, long_batch=True)
+
+
 @app.post('/judge')
 async def judge(submission: Submission):
     return JudgeResult.from_submission_result(await _judge(redis_queue, submission))
@@ -75,3 +90,15 @@ async def judge(submission: Submission):
 @app.post('/judge/batch')
 async def judge_batch(batch_sub: BatchSubmission):
     return BatchJudgeResult.from_submission_result(await _judge_batch(redis_queue, batch_sub))
+
+
+@app.post('/judge/long-batch')
+async def judge_batch(batch_sub: BatchSubmission):
+    return BatchJudgeResult.from_submission_result(await _judge_batch(redis_queue, batch_sub, long_batch=True))
+
+@app.get('/status')
+async def status():
+    return {
+        'queue': await redis_queue.llen(app_config.REDIS_WORK_QUEUE_NAME),
+        'num_workers': await redis_queue.count_keys(f'{app_config.REDIS_WORKER_ID_PREFIX}*')
+    }
