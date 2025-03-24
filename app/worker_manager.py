@@ -63,6 +63,46 @@ def executor_factory(type: str) -> ScriptExecutor:
         raise ValueError(f'Unsupported type: {type}')
 
 
+def normalize_output(output: str) -> str:
+    """Normalize output by removing extra whitespace and standardizing line endings"""
+    return "\n".join(line.rstrip() for line in output.strip().splitlines())
+
+
+def safe_eval_output(output: str):
+    """Safely evaluate output string"""
+    try:
+        return literal_eval(output)
+    except:
+        return output
+
+
+def compare_output(actual_output, expected_output):
+    if not actual_output and expected_output:
+        return False
+
+    if actual_output == expected_output:
+        return True
+
+    if isinstance(actual_output, (list, tuple)) and isinstance(
+        expected_output, (list, tuple)
+    ):
+        if len(actual_output) != len(expected_output):
+            return False
+        return all(compare_output(x, y) for x, y in zip(actual_output, expected_output))
+
+    if isinstance(actual_output, int) and isinstance(expected_output, int):
+        return actual_output == expected_output
+
+    try:
+        actual_output = float(actual_output)
+        expected_output = float(expected_output)
+        return isclose(actual_output, expected_output, abs_tol=1e-5, rel_tol=1e-5)
+    except:
+        pass
+
+    return False
+
+
 def judge(sub: Submission):
     try:
         executor = executor_factory(sub.type)
@@ -70,7 +110,10 @@ def judge(sub: Submission):
         # TODO: make this more robust
         success = result.success
         if sub.expected_output is not None:
-            success = success and result.stdout.strip() == sub.expected_output.strip()
+            actual_output = safe_eval_output(normalize_output(result.stdout))
+            expected_output = safe_eval_output(normalize_output(sub.expected_output))
+            judge_result = compare_output(actual_output, expected_output)
+            success = success and judge_result
         if not success:
             save_error_case(sub, result)
         sub_result = SubmissionResult(
