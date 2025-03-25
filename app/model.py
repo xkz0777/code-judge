@@ -23,12 +23,13 @@ class ResultReason(Enum):
     INTERNAL_ERROR = 'internal_error'
     WORKER_TIMEOUT = 'worker_timeout'
     QUEUE_TIMEOUT = 'queue_timeout'
-    invalid_input = 'invalid_input'
+    INVALID_INPUT = 'invalid_input'
 
 
 class SubmissionResult(BaseModel):
     sub_id: str
-    success: bool
+    success: bool         # Indicates if the submission was successful (run_success is True and output matches)
+    run_success: bool     # Indicates if the submission ran successfully (no internal error and exit code 0)
     cost: float
     stdout: str | None = None
     stderr: str | None = None
@@ -52,6 +53,7 @@ class BatchSubmissionResult(BaseModel):
 class JudgeResult(BaseModel):
     sub_id: str
     success: bool
+    run_success: bool
     cost: float
     reason: ResultReason = ResultReason.UNSPECIFIED
 
@@ -60,6 +62,7 @@ class JudgeResult(BaseModel):
         return cls(
             sub_id=result.sub_id,
             success=result.success,
+            run_success=result.run_success,
             cost=result.cost,
             reason=result.reason
         )
