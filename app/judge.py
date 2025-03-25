@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 def _to_result(submission: Submission, start_time: float, result_json: tuple[str, bytes] | None):
     if result_json is None: # timeout
-        return SubmissionResult(sub_id=submission.sub_id, success=False, cost=time() - start_time, reason=ResultReason.QUEUE_TIMEOUT)
+        return SubmissionResult(sub_id=submission.sub_id, run_success=False, success=False, cost=time() - start_time, reason=ResultReason.QUEUE_TIMEOUT)
     else:
         result = SubmissionResult.model_validate_json(result_json[1])
         if not result.success and result.cost >= app_config.MAX_EXECUTION_TIME:
@@ -41,7 +41,7 @@ async def judge(redis_queue: RedisQueue, submission: Submission):
         return _to_result(submission, start_time, result_json)
     except Exception:
         logger.exception(f'Failed to judge submission {submission.sub_id}')
-        return SubmissionResult(sub_id=submission.sub_id, success=False, cost=time() - start_time, reason=ResultReason.INTERNAL_ERROR)
+        return SubmissionResult(sub_id=submission.sub_id, run_success=False, success=False, cost=time() - start_time, reason=ResultReason.INTERNAL_ERROR)
 
 
 async def _judge_batch_impl(redis_queue: RedisQueue, subs: list[Submission], long_batch=False):
@@ -151,6 +151,7 @@ async def judge_batch(redis_queue: RedisQueue, batch_sub: BatchSubmission, long_
         results=[
             SubmissionResult(
                 sub_id=sub.sub_id,
+                run_success=False,
                 success=False,
                 cost=0,
                 reason=ResultReason.INTERNAL_ERROR

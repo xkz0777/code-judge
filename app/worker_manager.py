@@ -107,8 +107,9 @@ def judge(sub: Submission):
     try:
         executor = executor_factory(sub.type)
         result = executor.execute_script(sub.solution, sub.input)
-        # TODO: make this more robust
+
         success = result.success
+        run_success = result.success
         if sub.expected_output is not None:
             actual_output = safe_eval_output(normalize_output(result.stdout))
             expected_output = safe_eval_output(normalize_output(sub.expected_output))
@@ -118,6 +119,7 @@ def judge(sub: Submission):
             save_error_case(sub, result)
         sub_result = SubmissionResult(
             sub_id=sub.sub_id, success=success, cost=result.cost,
+            run_success=run_success,
             # only save stdout and stderr if expected_output is None
             stdout=result.stdout[:app_config.MAX_STDOUT_ERROR_LENGTH]
                 if result.stdout is not None else None,
@@ -131,7 +133,7 @@ def judge(sub: Submission):
         logger.exception(f'Worker failed to judge submission {sub.sub_id}')
         save_error_case(sub, None, e)
         sub_result = SubmissionResult(
-            sub_id=sub.sub_id, success=False, cost=0, reason=ResultReason.INTERNAL_ERROR
+            sub_id=sub.sub_id, run_success=False, success=False, cost=0, reason=ResultReason.INTERNAL_ERROR
         )
     return sub_result
 
@@ -187,9 +189,10 @@ class Worker(Process):
                     result_queue_name = f'{app_config.REDIS_RESULT_PREFIX}{work_id}'
                     result = SubmissionResult(
                         sub_id=sub_id,
+                        run_success=False,
                         success=False,
                         cost=0,
-                        reason=ResultReason.invalid_input
+                        reason=ResultReason.INVALID_INPUT
                     )
                 else:
                     logger.error(f'Failed to parse payload {payload_json}')
@@ -200,6 +203,7 @@ class Worker(Process):
                     long_running = payload.long_running
                     result = SubmissionResult(
                         sub_id=payload.submission.sub_id,
+                        run_success=False,
                         success=False,
                         cost=0,
                         reason=ResultReason.INTERNAL_ERROR

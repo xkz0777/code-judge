@@ -23,6 +23,7 @@ class Submission:
 class SubmissionResult:
     sub_id: str
     success: bool
+    run_success: bool
     cost: float
     stdout: str | None = None
     stderr: str | None = None
