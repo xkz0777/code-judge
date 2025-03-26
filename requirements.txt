@@ -1,4 +1,4 @@
-redis
-fastapi[standard]
-uvicorn
-psutil
+redis==5.2.1
+fastapi[standard]==0.115.11
+uvicorn==0.21.0
+psutil==7.0.0
